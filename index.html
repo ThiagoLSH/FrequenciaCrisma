@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Crisma Shalom — Frequência</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1E3A8A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body style="background:var(--azul-royal)">
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;max-width:420px;margin:0 auto">
+
+  <!-- Logo -->
+  <div class="fade-in-up" style="text-align:center;margin-bottom:32px">
+    <div style="width:80px;height:80px;background:var(--laranja);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 8px 24px rgba(249,115,22,0.4)">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </div>
+    <h1 style="color:white;font-size:26px;font-weight:700;line-height:1.15">Crisma Shalom</h1>
+    <p style="color:rgba(255,255,255,0.7);font-size:15px;margin-top:4px">Controle de Frequência 2026/2027</p>
+  </div>
+
+  <!-- Card de autenticação -->
+  <div class="card fade-in-up" style="width:100%;animation-delay:0.1s">
+
+    <!-- Tabs -->
+    <div class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="login">Entrar</button>
+      <button class="tab-btn" data-tab="cadastro">Criar Conta</button>
+    </div>
+
+    <!-- ─── LOGIN ─── -->
+    <div id="tab-login">
+      <form id="formLogin" novalidate>
+        <label>E-mail</label>
+        <input type="email" id="loginEmail" placeholder="seu@email.com" required autocomplete="email">
+        <label>Senha</label>
+        <input type="password" id="loginSenha" placeholder="••••••••" required autocomplete="current-password">
+        <button type="submit" class="btn-primary" id="btnLogin">Entrar</button>
+      </form>
+      <div class="divider">ou</div>
+      <button class="btn-google" id="btnGoogle">
+        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 7 29.5 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.9C14.6 16.1 19 13 24 13c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 7 29.5 4.5 24 4.5c-7.7 0-14.4 4.4-17.7 10.2z"/><path fill="#4CAF50" d="M24 43.5c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 34.9 26.7 36 24 36c-5.2 0-9.6-3.4-11.3-8H6.4C9.7 35.9 16.3 43.5 24 43.5z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.2 5.6l6.2 5.2C37.1 38.8 43.5 32 43.5 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+        Entrar com Google
+      </button>
+      <div style="text-align:center;margin-top:16px">
+        <button class="link" id="btnEsqueciSenha">Esqueci minha senha</button>
+      </div>
+    </div>
+
+    <!-- ─── CADASTRO ─── -->
+    <div id="tab-cadastro" style="display:none">
+      <form id="formCadastro" novalidate>
+        <label>Nome completo</label>
+        <input type="text" id="cadNome" placeholder="Seu nome completo" required autocomplete="name">
+
+        <label>E-mail</label>
+        <input type="email" id="cadEmail" placeholder="seu@email.com" required autocomplete="email">
+
+        <label>Senha</label>
+        <input type="password" id="cadSenha" placeholder="Mínimo 6 caracteres" required minlength="6">
+
+        <label>Confirmar senha</label>
+        <input type="password" id="cadSenhaConfirm" placeholder="Repita a senha" required>
+
+        <!-- Nucleo select (para usuários padrão) -->
+        <div id="nucleoField">
+          <label>Núcleo</label>
+          <select id="cadNucleo">
+            <option value="">Selecione seu núcleo</option>
+            <option value="Financeiro">Financeiro</option>
+            <option value="Pregações">Pregações</option>
+            <option value="Louvor">Louvor</option>
+            <option value="Acolhida">Acolhida</option>
+            <option value="Coordenação">Coordenação</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+
+        <!-- Checkbox coordenador -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <input type="checkbox" id="chkCoordenador" style="width:auto;margin-bottom:0">
+          <label for="chkCoordenador" style="margin:0;text-transform:none;font-size:15px;cursor:pointer;font-weight:600">Sou Coordenador</label>
+        </div>
+
+        <!-- Campo senha coordenador (oculto por padrão) -->
+        <div class="coordinator-field" id="coordField">
+          <label>Senha de Coordenador</label>
+          <input type="password" id="cadSenhaCoordenador" placeholder="Senha fornecida pela coordenação">
+          <p style="font-size:12px;color:var(--cinza-texto);margin-top:-10px;margin-bottom:14px">
+            Formato: 2 iniciais do seu nome + código secreto. Ex: para "Thiago" → TH + código
+          </p>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btnCadastrar">Criar Conta</button>
+      </form>
+      <div class="divider">ou</div>
+      <button class="btn-google" id="btnGoogleCad">
+        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 7 29.5 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.9C14.6 16.1 19 13 24 13c3.1 0 5.8 1.1 7.9 2.9l5.7-5.7C34.5 7 29.5 4.5 24 4.5c-7.7 0-14.4 4.4-17.7 10.2z"/><path fill="#4CAF50" d="M24 43.5c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 34.9 26.7 36 24 36c-5.2 0-9.6-3.4-11.3-8H6.4C9.7 35.9 16.3 43.5 24 43.5z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.2 5.6l6.2 5.2C37.1 38.8 43.5 32 43.5 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+        Cadastrar com Google
+      </button>
+    </div>
+
+  </div>
+
+  <p style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:24px;text-align:center">
+    Shalom Jovem Nova Parnamirim — 2026/2027
+  </p>
+</div>
+
+<!-- Modal Esqueci Senha -->
+<div class="modal-overlay" id="modalEsqueciSenha">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Recuperar Senha</h2>
+    <label>Seu e-mail cadastrado</label>
+    <input type="email" id="esqueciEmail" placeholder="seu@email.com">
+    <button class="btn-primary" id="btnEnviarRecuperacao" style="margin-top:4px">Enviar link de recuperação</button>
+    <button class="btn-secondary" id="btnFecharEsqueci" style="margin-top:10px">Cancelar</button>
+  </div>
+</div>
+
+<script type="module">
+import { fazerLogin, loginGoogle, cadastrar, recuperarSenha } from '/js/auth.js';
+import { showToast } from '/js/utils.js';
+import { supabase } from '/js/supabaseClient.js';
+
+// Verifica sessão ativa
+supabase.auth.getUser().then(async ({ data: { user } }) => {
+  if (user) {
+    const { data: usuario } = await supabase.from('usuarios').select('*').eq('id', user.id).single();
+    if (usuario) {
+      if (!usuario.onboarding_visto) { window.location.href = '/onboarding.html'; return; }
+      window.location.href = '/dashboard.html';
+    }
+  }
+});
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('tab-login').style.display   = tab === 'login'   ? '' : 'none';
+    document.getElementById('tab-cadastro').style.display = tab === 'cadastro' ? '' : 'none';
+  });
+});
+
+// Checkbox coordenador
+document.getElementById('chkCoordenador').addEventListener('change', function() {
+  document.getElementById('coordField').classList.toggle('show', this.checked);
+  document.getElementById('nucleoField').style.display = this.checked ? 'none' : '';
+});
+
+// Login
+document.getElementById('formLogin').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btnLogin');
+  btn.textContent = 'Entrando...'; btn.disabled = true;
+  try {
+    await fazerLogin(
+      document.getElementById('loginEmail').value,
+      document.getElementById('loginSenha').value
+    );
+  } catch(err) {
+    showToast(err.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos' : err.message, 'error');
+    btn.textContent = 'Entrar'; btn.disabled = false;
+  }
+});
+
+// Login Google
+document.getElementById('btnGoogle').addEventListener('click', loginGoogle);
+document.getElementById('btnGoogleCad').addEventListener('click', loginGoogle);
+
+// Cadastro
+document.getElementById('formCadastro').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nome  = document.getElementById('cadNome').value;
+  const email = document.getElementById('cadEmail').value;
+  const senha = document.getElementById('cadSenha').value;
+  const senhaC = document.getElementById('cadSenhaConfirm').value;
+  const isCoordenador = document.getElementById('chkCoordenador').checked;
+  const senhaCoordenador = document.getElementById('cadSenhaCoordenador').value;
+  const nucleo = document.getElementById('cadNucleo').value;
+
+  if (!nome.trim()) { showToast('Informe seu nome completo', 'error'); return; }
+  if (senha !== senhaC) { showToast('As senhas não conferem', 'error'); return; }
+  if (senha.length < 6)  { showToast('A senha deve ter ao menos 6 caracteres', 'error'); return; }
+
+  const btn = document.getElementById('btnCadastrar');
+  btn.textContent = 'Criando conta...'; btn.disabled = true;
+
+  try {
+    const { data: turma } = await supabase.from('turmas').select('id').eq('ativa', true).limit(1).single();
+    await cadastrar({ nomeCompleto: nome, email, senha, isCoordenador, senhaCoordenador, nucleo, turmaId: turma?.id });
+    showToast('Conta criada! Verifique seu e-mail para confirmar.', 'success');
+    btn.textContent = 'Criar Conta'; btn.disabled = false;
+  } catch(err) {
+    showToast(err.message, 'error');
+    btn.textContent = 'Criar Conta'; btn.disabled = false;
+  }
+});
+
+// Recuperar senha
+document.getElementById('btnEsqueciSenha').addEventListener('click', () => {
+  document.getElementById('modalEsqueciSenha').classList.add('open');
+});
+document.getElementById('btnFecharEsqueci').addEventListener('click', () => {
+  document.getElementById('modalEsqueciSenha').classList.remove('open');
+});
+document.getElementById('btnEnviarRecuperacao').addEventListener('click', async () => {
+  const email = document.getElementById('esqueciEmail').value;
+  if (!email) { showToast('Informe o e-mail', 'error'); return; }
+  try {
+    await recuperarSenha(email);
+    showToast('Link enviado! Verifique seu e-mail.', 'success');
+    document.getElementById('modalEsqueciSenha').classList.remove('open');
+  } catch(e) {
+    showToast('Erro ao enviar. Verifique o e-mail.', 'error');
+  }
+});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+}
+</script>
+</body>
+</html>

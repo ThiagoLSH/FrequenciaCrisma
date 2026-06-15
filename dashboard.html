@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Dashboard — Crisma Shalom</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1E3A8A">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <h1>Dashboard</h1>
+        <p id="subtitulo">Saúde de Frequência 2026/2027</p>
+      </div>
+      <button id="btnLogout" style="background:rgba(255,255,255,0.15);border:none;border-radius:10px;padding:8px 14px;color:white;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-principal)">Sair</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Cards de estatísticas -->
+    <div class="stats-grid stagger" id="statsGrid">
+      <div class="stat-card azul skeleton" style="height:100px"></div>
+      <div class="stat-card skeleton" style="height:100px"></div>
+      <div class="stat-card skeleton" style="height:100px"></div>
+      <div class="stat-card skeleton" style="height:100px"></div>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="card" style="margin-bottom:20px">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:4px">Distribuição Geral</h2>
+      <p style="font-size:13px;color:var(--cinza-texto);margin-bottom:8px">Proporção de saúde da turma</p>
+      <div class="chart-container">
+        <canvas id="grafico-saude"></canvas>
+      </div>
+    </div>
+
+    <!-- Busca -->
+    <div style="margin-bottom:16px">
+      <input type="search" class="search-input" id="buscaDash" placeholder="Buscar crismando...">
+    </div>
+
+    <!-- Lista -->
+    <div id="listaDashboard">
+      <div class="skeleton-card skeleton"></div>
+      <div class="skeleton-card skeleton"></div>
+      <div class="skeleton-card skeleton"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Navegação inferior -->
+<nav class="bottom-nav">
+  <a href="/dashboard.html" class="nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </a>
+  <a href="/frequencia.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Frequência
+  </a>
+  <a href="/crismandos.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Crismandos
+  </a>
+  <a href="/aprovacoes.html" class="nav-item" id="navAprovacoes" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    Aprovações
+  </a>
+</nav>
+
+<script type="module">
+import { protegerPagina, logout } from '/js/auth.js';
+import { carregarDashboard, renderizarLinhaDashboard, renderizarGrafico } from '/js/dashboard.js';
+import { showToast } from '/js/utils.js';
+import { buscarConfiguracaoTurma } from '/js/anamnese.js';
+
+const usuario = await protegerPagina();
+let todosOsDados = [];
+
+// Exibir aba de aprovações para coordenadores
+if (usuario.tipo_acesso === 'coordenador') {
+  document.getElementById('navAprovacoes').style.display = '';
+}
+
+document.getElementById('btnLogout').addEventListener('click', async () => {
+  if (confirm('Deseja sair?')) logout();
+});
+
+// Verifica config da turma
+if (usuario.turma_id) {
+  const config = await buscarConfiguracaoTurma(usuario.turma_id);
+  if (!config && usuario.tipo_acesso === 'coordenador') {
+    window.location.href = '/anamnese.html';
+    throw new Error('redirect');
+  }
+  if (!config && usuario.tipo_acesso !== 'coordenador') {
+    document.getElementById('listaDashboard').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">⏳</div>
+        <p>Aguardando configuração inicial pelo coordenador.</p>
+      </div>`;
+    document.getElementById('statsGrid').innerHTML = '';
+    throw new Error('sem config');
+  }
+}
+
+// Carrega dashboard
+async function carregar() {
+  try {
+    const { dados, total, atencao, reprovados, pendentes } = await carregarDashboard(usuario.turma_id);
+    todosOsDados = dados;
+
+    // Stats
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card azul fade-in-up">
+        <div class="stat-value">${total}</div>
+        <div class="stat-label">Crismandos ativos</div>
+      </div>
+      <div class="stat-card amarelo fade-in-up" style="animation-delay:.05s">
+        <div class="stat-value">${atencao}</div>
+        <div class="stat-label">Em atenção</div>
+      </div>
+      <div class="stat-card vermelho fade-in-up" style="animation-delay:.10s">
+        <div class="stat-value">${reprovados}</div>
+        <div class="stat-label">Reprovados</div>
+      </div>
+      <div class="stat-card laranja fade-in-up" style="animation-delay:.15s">
+        <div class="stat-value">${pendentes}</div>
+        <div class="stat-label">Pendências</div>
+      </div>
+    `;
+
+    renderizarGrafico(dados);
+    renderizarLista(dados);
+  } catch(err) {
+    showToast('Erro ao carregar dados', 'error');
+  }
+}
+
+function renderizarLista(dados) {
+  const lista = document.getElementById('listaDashboard');
+  if (!dados.length) {
+    lista.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🎉</div><p>Nenhum crismando cadastrado ainda.</p></div>`;
+    return;
+  }
+  lista.innerHTML = dados.map(renderizarLinhaDashboard).join('');
+}
+
+document.getElementById('buscaDash').addEventListener('input', (e) => {
+  const termo = e.target.value.toLowerCase();
+  const filtrado = todosOsDados.filter(d => d.nome_completo.toLowerCase().includes(termo));
+  renderizarLista(filtrado);
+});
+
+carregar();
+</script>
+
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(() => {});</script>
+</body>
+</html>

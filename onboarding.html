@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Bem-vindo — Crisma Shalom</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1E3A8A">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body>
+
+<div class="onboarding-container">
+
+  <div id="slides">
+    <div class="slide active">
+      <div class="slide-icon">📋</div>
+      <h2>Bem-vindo ao Crisma Shalom!</h2>
+      <p>Acompanhe a frequência da sua turma de forma simples e rápida, direto do celular.</p>
+    </div>
+    <div class="slide">
+      <div class="slide-icon">📅</div>
+      <h2>Marque em segundos</h2>
+      <p>Registre presenças e faltas rapidamente. Justificativas ficam pendentes até aprovação da coordenação.</p>
+    </div>
+    <div class="slide">
+      <div class="slide-icon">📊</div>
+      <h2>Acompanhe a saúde da turma</h2>
+      <p>Veja o dashboard completo e receba lembretes automáticos no dia da Crisma.</p>
+    </div>
+  </div>
+
+  <div class="onboarding-dots">
+    <span class="dot active"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+  </div>
+
+  <button class="btn-primary" id="btnProximo">Próximo</button>
+  <button class="btn-secondary" id="btnPular">Pular</button>
+
+</div>
+
+<script type="module" src="/js/onboarding.js"></script>
+</body>
+</html>

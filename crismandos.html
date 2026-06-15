@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Crismandos — Crisma Shalom</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1E3A8A">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1>Crismandos</h1>
+    <p id="subtituloCris">Carregando...</p>
+  </div>
+
+  <div class="content">
+
+    <!-- Busca + filtro -->
+    <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center">
+      <div style="flex:1">
+        <input type="search" class="search-input" id="buscaCrisma" placeholder="Buscar por nome..." style="margin-bottom:0">
+      </div>
+      <label class="toggle-wrapper" style="flex-shrink:0">
+        <span style="font-size:13px;color:var(--cinza-texto);font-weight:600">Inativos</span>
+        <label class="toggle" style="margin:0">
+          <input type="checkbox" id="filtroInativos">
+          <span class="toggle-slider"></span>
+        </label>
+      </label>
+    </div>
+
+    <!-- Lista -->
+    <div id="listaCrisma" class="stagger">
+      <div class="skeleton-card skeleton"></div>
+      <div class="skeleton-card skeleton"></div>
+      <div class="skeleton-card skeleton"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab pulse" id="fabNovo" title="Novo Crismando">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- Nav inferior -->
+<nav class="bottom-nav">
+  <a href="/dashboard.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </a>
+  <a href="/frequencia.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Frequência
+  </a>
+  <a href="/crismandos.html" class="nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Crismandos
+  </a>
+  <a href="/aprovacoes.html" class="nav-item" id="navAprovacoes" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    Aprovações
+  </a>
+</nav>
+
+<!-- Modal Novo/Editar Crismando -->
+<div class="modal-overlay" id="modalCrismando">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="modalTitulo">Novo Crismando</h2>
+    <input type="hidden" id="editId">
+
+    <label>Nome completo *</label>
+    <input type="text" id="cadCrisNome" placeholder="Nome completo do crismando">
+
+    <label>Data de nascimento</label>
+    <input type="date" id="cadCrisNasc">
+
+    <label>Nome do responsável</label>
+    <input type="text" id="cadCrisResp" placeholder="Nome do pai/mãe/responsável">
+
+    <label>Telefone do responsável</label>
+    <input type="tel" id="cadCrisTel" placeholder="(84) 99999-9999">
+
+    <button class="btn-primary" id="btnSalvarCris" style="margin-top:4px">Salvar</button>
+    <button class="btn-secondary" id="btnCancelarCris" style="margin-top:10px">Cancelar</button>
+  </div>
+</div>
+
+<script type="module">
+import { protegerPagina } from '/js/auth.js';
+import { listarCrismandos, cadastrarCrismando, editarCrismando, toggleAtivoCrismando } from '/js/crismandos.js';
+import { buscarContagemFaltas } from '/js/frequencia.js';
+import { showToast, iniciais, getStatusBadge, formatarData } from '/js/utils.js';
+
+const usuario = await protegerPagina();
+if (usuario.tipo_acesso === 'coordenador') document.getElementById('navAprovacoes').style.display = '';
+
+let todosCrisma = [];
+let editando = null;
+
+async function carregar() {
+  const comInativos = document.getElementById('filtroInativos').checked;
+  todosCrisma = await listarCrismandos(usuario.turma_id, !comInativos);
+  document.getElementById('subtituloCris').textContent = `${todosCrisma.filter(c=>c.ativo).length} ativos`;
+  renderizarLista(todosCrisma);
+}
+
+function renderizarLista(lista) {
+  const container = document.getElementById('listaCrisma');
+  if (!lista.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👥</div><p>Nenhum crismando encontrado.</p><button class="btn-primary" onclick="abrirModal()" style="max-width:200px;margin:0 auto">+ Adicionar primeiro</button></div>`;
+    return;
+  }
+  container.innerHTML = lista.map(c => {
+    const ini = iniciais(c.nome_completo);
+    return `
+    <div class="crismando-card" onclick="window.location.href='/crismando-detalhe.html?id=${c.id}'" style="opacity:${c.ativo ? 1 : 0.5}">
+      <div class="avatar" style="${!c.ativo ? 'background:var(--cinza-texto)' : ''}">${ini}</div>
+      <div style="flex:1">
+        <div class="nome">${c.nome_completo} ${!c.ativo ? '<span class="badge badge-cinza">Inativo</span>' : ''}</div>
+        <div class="sub">${c.responsavel_nome ? '👤 ' + c.responsavel_nome : ''}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center" onclick="event.stopPropagation()">
+        <button class="btn-icon" onclick="abrirModal('${c.id}')" title="Editar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn-icon" onclick="toggleAtivo('${c.id}', ${c.ativo})" title="${c.ativo ? 'Desativar' : 'Ativar'}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${c.ativo ? 'var(--verde-ok)' : 'var(--cinza-texto)'}" stroke-width="2"><rect x="1" y="5" width="22" height="14" rx="7"/><circle cx="${c.ativo ? '16' : '8'}" cy="12" r="4" fill="${c.ativo ? 'var(--verde-ok)' : 'var(--cinza-texto)'}"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.abrirModal = (id = null) => {
+  editando = id;
+  document.getElementById('modalTitulo').textContent = id ? 'Editar Crismando' : 'Novo Crismando';
+  document.getElementById('editId').value = id || '';
+
+  if (id) {
+    const c = todosCrisma.find(x => x.id === id);
+    if (c) {
+      document.getElementById('cadCrisNome').value = c.nome_completo || '';
+      document.getElementById('cadCrisNasc').value = c.data_nascimento || '';
+      document.getElementById('cadCrisResp').value = c.responsavel_nome || '';
+      document.getElementById('cadCrisTel').value  = c.responsavel_telefone || '';
+    }
+  } else {
+    ['cadCrisNome','cadCrisNasc','cadCrisResp','cadCrisTel'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+  }
+
+  document.getElementById('modalCrismando').classList.add('open');
+};
+
+window.toggleAtivo = async (id, ativo) => {
+  try {
+    await toggleAtivoCrismando(id, !ativo);
+    showToast(!ativo ? 'Crismando reativado' : 'Crismando desativado');
+    carregar();
+  } catch(e) {
+    showToast('Erro ao alterar status', 'error');
+  }
+};
+
+function fecharModal() {
+  document.getElementById('modalCrismando').classList.remove('open');
+}
+
+document.getElementById('btnCancelarCris').addEventListener('click', fecharModal);
+document.getElementById('modalCrismando').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalCrismando')) fecharModal();
+});
+
+document.getElementById('fabNovo').addEventListener('click', () => abrirModal());
+
+document.getElementById('btnSalvarCris').addEventListener('click', async () => {
+  const nome = document.getElementById('cadCrisNome').value.trim();
+  if (!nome) { showToast('Informe o nome do crismando', 'error'); return; }
+
+  const btn = document.getElementById('btnSalvarCris');
+  btn.textContent = 'Salvando...'; btn.disabled = true;
+
+  const campos = {
+    nomeCompleto: nome,
+    dataNascimento: document.getElementById('cadCrisNasc').value || null,
+    responsavelNome: document.getElementById('cadCrisResp').value.trim() || null,
+    responsavelTelefone: document.getElementById('cadCrisTel').value.trim() || null,
+  };
+
+  try {
+    if (editando) {
+      await editarCrismando(editando, {
+        nome_completo: campos.nomeCompleto,
+        data_nascimento: campos.dataNascimento,
+        responsavel_nome: campos.responsavelNome,
+        responsavel_telefone: campos.responsavelTelefone
+      });
+      showToast('Crismando atualizado', 'success');
+    } else {
+      await cadastrarCrismando({ ...campos, turmaId: usuario.turma_id });
+      showToast('Crismando cadastrado!', 'success');
+    }
+    fecharModal();
+    carregar();
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  } finally {
+    btn.textContent = 'Salvar'; btn.disabled = false;
+  }
+});
+
+document.getElementById('buscaCrisma').addEventListener('input', e => {
+  const t = e.target.value.toLowerCase();
+  renderizarLista(todosCrisma.filter(c => c.nome_completo.toLowerCase().includes(t)));
+});
+
+document.getElementById('filtroInativos').addEventListener('change', carregar);
+
+carregar();
+</script>
+
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(() => {});</script>
+</body>
+</html>
