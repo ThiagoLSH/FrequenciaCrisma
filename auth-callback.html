@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Autenticando... — Crisma Shalom</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="background:var(--azul-royal);display:flex;align-items:center;justify-content:center;min-height:100vh">
+  <div style="text-align:center;color:white">
+    <div class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:var(--laranja);margin-bottom:16px"></div>
+    <p style="font-size:16px;font-weight:600">Autenticando com Google...</p>
+  </div>
+
+<script type="module">
+import { supabase } from '/js/supabaseClient.js';
+import { redirecionarAposLogin } from '/js/auth.js';
+
+const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+  window.location.href = '/index.html';
+} else {
+  const { data: existe } = await supabase.from('usuarios').select('id').eq('id', user.id).maybeSingle();
+
+  if (!existe) {
+    // Primeiro login com Google: cria registro do usuário
+    const { data: turma } = await supabase.from('turmas').select('id').eq('ativa', true).limit(1).maybeSingle();
+    await supabase.from('usuarios').insert({
+      id: user.id,
+      nome_completo: user.user_metadata?.full_name || user.email,
+      email: user.email,
+      tipo_acesso: 'nucleo',
+      turma_id: turma?.id || null,
+      onboarding_visto: false
+    });
+  }
+
+  const { data: usuario } = await supabase.from('usuarios').select('*').eq('id', user.id).single();
+  await redirecionarAposLogin(usuario);
+}
+</script>
+</body>
+</html>

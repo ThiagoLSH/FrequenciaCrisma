@@ -1,0 +1,209 @@
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to   { opacity: 1; max-height: 200px; }
+}
+
+.slide-down {
+  animation: slideDown 0.35s ease forwards;
+}
+
+@keyframes pulse-orange {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.4); }
+  50%       { box-shadow: 0 0 0 10px rgba(249,115,22,0); }
+}
+
+.pulse {
+  animation: pulse-orange 1.6s infinite;
+}
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-line {
+  height: 16px;
+  margin-bottom: 10px;
+}
+
+.skeleton-card {
+  height: 80px;
+  border-radius: 14px;
+  margin-bottom: 10px;
+}
+
+/* Scale in */
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Bounce */
+@keyframes bounceIn {
+  0%   { transform: scale(0); }
+  60%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.bounce-in {
+  animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Stagger children */
+.stagger > * {
+  opacity: 0;
+  animation: fadeInUp 0.35s ease forwards;
+}
+
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.20s; }
+.stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger > *:nth-child(6) { animation-delay: 0.30s; }
+.stagger > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger > *:nth-child(8) { animation-delay: 0.40s; }
+.stagger > *:nth-child(n+9) { animation-delay: 0.45s; }
+
+/* Onboarding */
+.onboarding-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px 28px;
+  text-align: center;
+  background: linear-gradient(160deg, var(--azul-royal) 0%, var(--azul-royal-dark) 100%);
+  color: var(--branco);
+}
+
+.slide {
+  display: none;
+  max-width: 320px;
+}
+
+.slide.active {
+  display: block;
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.slide-icon {
+  font-size: 72px;
+  margin-bottom: 20px;
+}
+
+.slide h2 {
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  line-height: 1.15;
+}
+
+.slide p {
+  font-size: 17px;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.onboarding-dots {
+  display: flex;
+  gap: 8px;
+  margin: 28px 0;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transition: all 0.3s ease;
+}
+
+.dot.active {
+  background: var(--laranja);
+  width: 24px;
+  border-radius: 4px;
+}
+
+.onboarding-container .btn-primary {
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.onboarding-container .btn-secondary {
+  background: transparent;
+  border-color: rgba(255,255,255,0.4);
+  color: var(--branco);
+  margin-top: 12px;
+  max-width: 280px;
+}
+
+/* Timeline animation */
+.timeline-item {
+  animation: fadeInUp 0.35s ease forwards;
+  opacity: 0;
+}
+
+.timeline-item:nth-child(1) { animation-delay: 0.05s; }
+.timeline-item:nth-child(2) { animation-delay: 0.10s; }
+.timeline-item:nth-child(3) { animation-delay: 0.15s; }
+.timeline-item:nth-child(4) { animation-delay: 0.20s; }
+.timeline-item:nth-child(5) { animation-delay: 0.25s; }
+.timeline-item:nth-child(n+6) { animation-delay: 0.30s; }
+
+/* Chart container */
+.chart-container {
+  position: relative;
+  height: 220px;
+  margin: 20px 0;
+}
+
+/* Logo pulse on auth */
+.logo-pulse {
+  animation: pulse-orange 2s infinite;
+  border-radius: 16px;
+}
+
+/* Checkbox personalizado para coordenador */
+.coordinator-field {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.3s ease;
+}
+
+.coordinator-field.show {
+  max-height: 200px;
+  opacity: 1;
+}

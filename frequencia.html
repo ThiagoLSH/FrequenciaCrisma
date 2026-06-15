@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Frequência — Crisma Shalom</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1E3A8A">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1>Frequência</h1>
+    <p>Marque as presenças e faltas do dia</p>
+    <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
+      <input type="date" id="dataFrequencia" style="
+        background:rgba(255,255,255,0.15);
+        border:2px solid rgba(255,255,255,0.3);
+        color:white;
+        border-radius:10px;
+        padding:10px 14px;
+        font-size:15px;
+        font-weight:600;
+        margin-bottom:0;
+        width:auto;
+        flex:1;
+      ">
+      <button id="btnSalvarFreq" class="btn-primary" style="width:auto;padding:10px 20px;flex-shrink:0">Salvar</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Busca -->
+    <div style="margin-bottom:16px">
+      <input type="search" class="search-input" id="buscaFreq" placeholder="Buscar crismando...">
+    </div>
+
+    <!-- Resumo do dia -->
+    <div style="display:flex;gap:10px;margin-bottom:16px" id="resumoDia" style="display:none">
+      <div class="card" style="flex:1;text-align:center;padding:12px">
+        <div style="font-size:24px;font-weight:700;color:var(--verde-ok)" id="cntPresente">0</div>
+        <div style="font-size:12px;color:var(--cinza-texto);font-weight:600;text-transform:uppercase">Presentes</div>
+      </div>
+      <div class="card" style="flex:1;text-align:center;padding:12px">
+        <div style="font-size:24px;font-weight:700;color:var(--vermelho-alerta)" id="cntFalta">0</div>
+        <div style="font-size:12px;color:var(--cinza-texto);font-weight:600;text-transform:uppercase">Faltas</div>
+      </div>
+    </div>
+
+    <!-- Lista de crismandos -->
+    <div id="listaFreq">
+      <div class="skeleton-card skeleton"></div>
+      <div class="skeleton-card skeleton"></div>
+      <div class="skeleton-card skeleton"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Nav inferior -->
+<nav class="bottom-nav">
+  <a href="/dashboard.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </a>
+  <a href="/frequencia.html" class="nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Frequência
+  </a>
+  <a href="/crismandos.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Crismandos
+  </a>
+  <a href="/aprovacoes.html" class="nav-item" id="navAprovacoes" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    Aprovações
+  </a>
+</nav>
+
+<script type="module">
+import { protegerPagina } from '/js/auth.js';
+import { listarCrismandos } from '/js/crismandos.js';
+import { registrarFalta, removerFalta, decidirJustificativa, buscarFaltasPorData, buscarContagemFaltas } from '/js/frequencia.js';
+import { buscarConfiguracaoTurma } from '/js/anamnese.js';
+import { showToast, hojeISO, formatarData, getStatusBadge, iniciais, proximaDataCrisma } from '/js/utils.js';
+
+const usuario = await protegerPagina();
+if (usuario.tipo_acesso === 'coordenador') document.getElementById('navAprovacoes').style.display = '';
+
+let crismandos = [];
+let faltasDoDia = []; // registros já salvos
+const faltas = {}; // { id: { justificativa, faltaId } } — estado local
+
+// Data padrão
+const config = await buscarConfiguracaoTurma(usuario.turma_id);
+const dataInput = document.getElementById('dataFrequencia');
+dataInput.value = config ? proximaDataCrisma(config.dia_semana_crisma) : hojeISO();
+
+async function carregarDia() {
+  const data = dataInput.value;
+  if (!data) return;
+
+  document.getElementById('listaFreq').innerHTML = `
+    <div class="skeleton-card skeleton"></div>
+    <div class="skeleton-card skeleton"></div>
+  `;
+
+  [crismandos, faltasDoDia] = await Promise.all([
+    listarCrismandos(usuario.turma_id),
+    buscarFaltasPorData(data, usuario.turma_id)
+  ]);
+
+  // Pré-preenche estado local a partir do banco
+  Object.keys(faltas).forEach(k => delete faltas[k]);
+  faltasDoDia.forEach(f => {
+    faltas[f.crismando_id] = {
+      justificativa: f.justificativa || '',
+      faltaId: f.id,
+      status: f.status_justificativa
+    };
+  });
+
+  renderizarLista(crismandos);
+  atualizarContadores();
+}
+
+function atualizarContadores() {
+  const totalFaltas = Object.keys(faltas).length;
+  document.getElementById('cntFalta').textContent = totalFaltas;
+  document.getElementById('cntPresente').textContent = crismandos.length - totalFaltas;
+}
+
+function renderizarLista(lista) {
+  const container = document.getElementById('listaFreq');
+  if (!lista.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👥</div><p>Nenhum crismando cadastrado.</p></div>`;
+    return;
+  }
+
+  container.innerHTML = lista.map(c => {
+    const falta = faltas[c.id];
+    const temFalta = !!falta;
+    const faltaId  = falta?.faltaId;
+    const status   = falta?.status || '';
+    const ehCoordenador = usuario.tipo_acesso === 'coordenador';
+
+    const badgeInfo = getStatusBadge(0); // será atualizado assincronamente se necessário
+    const ini = iniciais(c.nome_completo);
+
+    return `
+    <div class="freq-item ${temFalta ? 'faltou' : ''}" id="freq-${c.id}">
+      <div class="freq-item-header">
+        <div class="avatar">${ini}</div>
+        <div class="nome">${c.nome_completo}</div>
+        <div class="freq-toggle">
+          <span style="font-size:13px;color:${temFalta ? 'var(--vermelho-alerta)' : 'var(--verde-ok)'};font-weight:700">
+            ${temFalta ? 'Faltou' : 'Presente'}
+          </span>
+          <label class="toggle">
+            <input type="checkbox" ${temFalta ? 'checked' : ''} onchange="toggleFalta('${c.id}', '${c.nome_completo}', this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="freq-item-body ${temFalta ? 'open' : ''}" id="body-${c.id}">
+        <label style="margin-bottom:6px">Justificativa (opcional)</label>
+        <textarea id="just-${c.id}" placeholder="Deixe em branco se for falta não justificável" rows="2" style="margin-bottom:10px">${falta?.justificativa || ''}</textarea>
+        ${ehCoordenador && faltaId ? `
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-danger" onclick="remover('${c.id}','${faltaId}')">🗑 Remover falta</button>
+            ${status === 'pendente' ? `
+              <button class="btn-success" onclick="aprovar('${faltaId}','aprovada','${c.id}')">✓ Aprovar just.</button>
+              <button class="btn-danger"  onclick="aprovar('${faltaId}','recusada','${c.id}')">✗ Recusar just.</button>
+            ` : ''}
+          </div>
+        ` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.toggleFalta = (crismandoId, nome, marcouFalta) => {
+  const item = document.getElementById(`freq-${crismandoId}`);
+  const body = document.getElementById(`body-${crismandoId}`);
+  const statusEl = item.querySelector('.freq-toggle span');
+
+  if (marcouFalta) {
+    faltas[crismandoId] = { justificativa: '', faltaId: null, status: '' };
+    item.classList.add('faltou');
+    body.classList.add('open');
+    statusEl.textContent = 'Faltou';
+    statusEl.style.color = 'var(--vermelho-alerta)';
+  } else {
+    delete faltas[crismandoId];
+    item.classList.remove('faltou');
+    body.classList.remove('open');
+    statusEl.textContent = 'Presente';
+    statusEl.style.color = 'var(--verde-ok)';
+  }
+  atualizarContadores();
+};
+
+window.remover = async (crismandoId, faltaId) => {
+  if (!confirm('Remover esta falta?')) return;
+  try {
+    await removerFalta(faltaId);
+    delete faltas[crismandoId];
+    showToast('Falta removida', 'success');
+    carregarDia();
+  } catch(e) {
+    showToast('Erro ao remover falta', 'error');
+  }
+};
+
+window.aprovar = async (faltaId, decisao, crismandoId) => {
+  try {
+    await decidirJustificativa(faltaId, decisao);
+    showToast(decisao === 'aprovada' ? 'Justificativa aprovada' : 'Justificativa recusada',
+              decisao === 'aprovada' ? 'success' : 'error');
+    carregarDia();
+  } catch(e) {
+    showToast('Erro', 'error');
+  }
+};
+
+// Salvar frequência do dia
+document.getElementById('btnSalvarFreq').addEventListener('click', async () => {
+  const data = dataInput.value;
+  if (!data) { showToast('Selecione a data', 'error'); return; }
+
+  const btn = document.getElementById('btnSalvarFreq');
+  btn.textContent = 'Salvando...'; btn.disabled = true;
+
+  const faltasParaSalvar = crismandos
+    .filter(c => faltas[c.id] && !faltas[c.id].faltaId) // apenas novas (sem faltaId = não salvo ainda)
+    .map(c => ({
+      crismandoId: c.id,
+      justificativa: document.getElementById(`just-${c.id}`)?.value?.trim() || ''
+    }));
+
+  try {
+    for (const f of faltasParaSalvar) {
+      await registrarFalta(f.crismandoId, data, f.justificativa, usuario.id, usuario.turma_id);
+    }
+    showToast(`Frequência salva! ${faltasParaSalvar.length} nova(s) falta(s) registrada(s)`, 'success');
+    await carregarDia();
+  } catch(e) {
+    showToast('Erro ao salvar frequência: ' + e.message, 'error');
+  } finally {
+    btn.textContent = 'Salvar'; btn.disabled = false;
+  }
+});
+
+// Busca
+document.getElementById('buscaFreq').addEventListener('input', (e) => {
+  const termo = e.target.value.toLowerCase();
+  renderizarLista(crismandos.filter(c => c.nome_completo.toLowerCase().includes(termo)));
+});
+
+dataInput.addEventListener('change', carregarDia);
+carregarDia();
+</script>
+
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(() => {});</script>
+</body>
+</html>

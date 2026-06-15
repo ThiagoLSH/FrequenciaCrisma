@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Aprovações — Crisma Shalom</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1E3A8A">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1>Aprovações</h1>
+    <p id="subtituloAprov">Justificativas pendentes de revisão</p>
+  </div>
+
+  <div class="content">
+    <div id="listaAprovacoes">
+      <div class="skeleton-card skeleton"></div>
+      <div class="skeleton-card skeleton"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Nav inferior -->
+<nav class="bottom-nav">
+  <a href="/dashboard.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </a>
+  <a href="/frequencia.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    Frequência
+  </a>
+  <a href="/crismandos.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Crismandos
+  </a>
+  <a href="/aprovacoes.html" class="nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    Aprovações
+  </a>
+</nav>
+
+<script type="module">
+import { protegerPagina } from '/js/auth.js';
+import { carregarAprovacoes, renderizarAprovacao } from '/js/aprovacoes.js';
+import { showToast } from '/js/utils.js';
+
+// Somente coordenador
+const usuario = await protegerPagina(true);
+
+async function carregar() {
+  try {
+    const pendentes = await carregarAprovacoes(usuario.turma_id);
+    const container = document.getElementById('listaAprovacoes');
+    document.getElementById('subtituloAprov').textContent =
+      `${pendentes.length} justificativa${pendentes.length !== 1 ? 's' : ''} pendente${pendentes.length !== 1 ? 's' : ''}`;
+
+    if (!pendentes.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">✅</div>
+          <p>Nenhuma justificativa pendente. Tudo em dia!</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = '';
+    pendentes.forEach(item => {
+      container.appendChild(renderizarAprovacao(item, () => {
+        // Atualiza contador quando decidir
+        const atual = parseInt(document.getElementById('subtituloAprov').textContent);
+        const novoCount = Math.max(0, (isNaN(atual) ? pendentes.length : atual) - 1);
+        document.getElementById('subtituloAprov').textContent =
+          `${novoCount} justificativa${novoCount !== 1 ? 's' : ''} pendente${novoCount !== 1 ? 's' : ''}`;
+      }));
+    });
+  } catch(e) {
+    showToast('Erro ao carregar aprovações', 'error');
+  }
+}
+
+carregar();
+</script>
+
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(() => {});</script>
+</body>
+</html>

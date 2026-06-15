@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Configuração Inicial — Crisma Shalom</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1E3A8A">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body style="background:var(--azul-royal)">
+
+<div style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 20px;max-width:420px;margin:0 auto">
+
+  <div class="fade-in-up" style="text-align:center;margin-bottom:32px;color:white">
+    <div style="font-size:64px;margin-bottom:16px">⚙️</div>
+    <h1 style="font-size:28px;font-weight:700">Configuração da Turma</h1>
+    <p style="opacity:0.8;margin-top:8px;font-size:15px">Feita uma vez pelo coordenador — define o dia e horário das aulas de Crisma.</p>
+  </div>
+
+  <div class="card fade-in-up" style="width:100%;animation-delay:0.1s">
+    <form id="formAnamnese" novalidate>
+
+      <label>Dia da semana da Crisma</label>
+      <select id="diaSemana" required>
+        <option value="">Selecione o dia</option>
+        <option value="segunda-feira">Segunda-feira</option>
+        <option value="terça-feira">Terça-feira</option>
+        <option value="quarta-feira">Quarta-feira</option>
+        <option value="quinta-feira">Quinta-feira</option>
+        <option value="sexta-feira">Sexta-feira</option>
+        <option value="sábado">Sábado</option>
+        <option value="domingo">Domingo</option>
+      </select>
+
+      <label>Horário de início</label>
+      <input type="time" id="horarioInicio" required>
+
+      <label>Horário de término</label>
+      <input type="time" id="horarioFim" required>
+
+      <button type="submit" class="btn-primary" id="btnSalvar" style="margin-top:8px">Salvar e Continuar</button>
+    </form>
+  </div>
+
+</div>
+
+<script type="module">
+import { protegerPagina } from '/js/auth.js';
+import { salvarConfiguracaoTurma } from '/js/anamnese.js';
+import { showToast } from '/js/utils.js';
+
+const usuario = await protegerPagina(true);
+
+document.getElementById('formAnamnese').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const dia   = document.getElementById('diaSemana').value;
+  const inicio = document.getElementById('horarioInicio').value;
+  const fim    = document.getElementById('horarioFim').value;
+
+  if (!dia || !inicio || !fim) { showToast('Preencha todos os campos', 'error'); return; }
+  if (fim <= inicio) { showToast('O horário de término deve ser após o início', 'error'); return; }
+
+  const btn = document.getElementById('btnSalvar');
+  btn.textContent = 'Salvando...'; btn.disabled = true;
+
+  try {
+    await salvarConfiguracaoTurma({
+      diaSemana: dia,
+      horarioInicio: inicio,
+      horarioFim: fim,
+      turmaId: usuario.turma_id
+    });
+    showToast('Configuração salva!', 'success');
+    setTimeout(() => { window.location.href = '/dashboard.html'; }, 800);
+  } catch(err) {
+    showToast('Erro ao salvar: ' + err.message, 'error');
+    btn.textContent = 'Salvar e Continuar'; btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

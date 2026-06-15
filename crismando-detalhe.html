@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Histórico — Crisma Shalom</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1E3A8A">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/animations.css">
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <button class="btn-back" onclick="history.back()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      Voltar
+    </button>
+    <h1 id="nomeHeader">Carregando...</h1>
+    <p id="responsavelHeader" style="opacity:0.8"></p>
+  </div>
+
+  <div class="content">
+
+    <!-- Cards de saúde -->
+    <div class="stats-grid" id="saudeCards" style="margin-bottom:20px">
+      <div class="skeleton-card skeleton" style="height:80px"></div>
+      <div class="skeleton-card skeleton" style="height:80px"></div>
+      <div class="skeleton-card skeleton" style="height:80px"></div>
+      <div class="skeleton-card skeleton" style="height:80px"></div>
+    </div>
+
+    <!-- Ações do coordenador -->
+    <div id="acoesCoord" style="display:none;margin-bottom:16px">
+      <button class="btn-secondary" id="btnEditar">✏️ Editar dados</button>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:16px">Histórico de Frequência</h2>
+      <div class="timeline" id="timeline">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal Editar Crismando -->
+<div class="modal-overlay" id="modalEditar">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Editar Crismando</h2>
+
+    <label>Nome completo *</label>
+    <input type="text" id="editNome">
+
+    <label>Data de nascimento</label>
+    <input type="date" id="editNasc">
+
+    <label>Nome do responsável</label>
+    <input type="text" id="editResp">
+
+    <label>Telefone do responsável</label>
+    <input type="tel" id="editTel">
+
+    <button class="btn-primary" id="btnSalvarEdit" style="margin-top:4px">Salvar</button>
+    <button class="btn-secondary" id="btnCancelarEdit" style="margin-top:10px">Cancelar</button>
+  </div>
+</div>
+
+<script type="module">
+import { protegerPagina } from '/js/auth.js';
+import { buscarCrismando, editarCrismando } from '/js/crismandos.js';
+import { buscarHistoricoCrismando, buscarContagemFaltas, removerFalta, decidirJustificativa } from '/js/frequencia.js';
+import { buscarConfiguracaoTurma } from '/js/anamnese.js';
+import { showToast, formatarData, formatarDataCurta, getStatusBadge, getProgressClasse, iniciais, gerarDatasCrismaAteHoje } from '/js/utils.js';
+
+const usuario = await protegerPagina();
+const params  = new URLSearchParams(location.search);
+const id      = params.get('id');
+if (!id) { window.location.href = '/crismandos.html'; throw new Error('sem id'); }
+
+const ehCoordenador = usuario.tipo_acesso === 'coordenador';
+if (ehCoordenador) document.getElementById('acoesCoord').style.display = '';
+
+let crismando;
+let saude;
+
+async function carregar() {
+  [crismando, saude] = await Promise.all([
+    buscarCrismando(id),
+    buscarContagemFaltas(id)
+  ]);
+
+  // Header
+  document.getElementById('nomeHeader').textContent = crismando.nome_completo;
+  if (crismando.responsavel_nome) {
+    document.getElementById('responsavelHeader').textContent =
+      `👤 ${crismando.responsavel_nome}` + (crismando.responsavel_telefone ? ` · 📞 ${crismando.responsavel_telefone}` : '');
+  }
+  document.title = crismando.nome_completo + ' — Crisma Shalom';
+
+  // Cards saúde
+  const { classe: badgeClass } = getStatusBadge(saude.faltas_nao_justificaveis);
+  const corSaude = badgeClass === 'badge-verde' ? 'var(--verde-ok)' : badgeClass === 'badge-amarelo' ? '#D97706' : 'var(--vermelho-alerta)';
+  const pct = Math.min((saude.faltas_nao_justificaveis / 7) * 100, 100);
+
+  document.getElementById('saudeCards').innerHTML = `
+    <div class="stat-card" style="grid-column:1/-1">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <div class="stat-value" style="color:${corSaude}">${saude.faltas_nao_justificaveis}<span style="font-size:18px;opacity:0.5">/7</span></div>
+          <div class="stat-label">Faltas não justificáveis</div>
+        </div>
+        <span class="badge ${badgeClass}" style="font-size:14px">
+          ${saude.status_saude === 'ok' ? 'OK' : saude.status_saude === 'atencao' ? 'Atenção' : 'Reprovado'}
+        </span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill ${getProgressClasse(saude.faltas_nao_justificaveis)}" style="width:${pct}%"></div>
+      </div>
+    </div>
+    <div class="stat-card azul">
+      <div class="stat-value">${saude.faltas_justificadas}</div>
+      <div class="stat-label">Justificadas</div>
+    </div>
+    <div class="stat-card laranja">
+      <div class="stat-value">${saude.justificativas_pendentes}</div>
+      <div class="stat-label">Pendentes</div>
+    </div>
+  `;
+
+  await renderizarTimeline();
+}
+
+async function renderizarTimeline() {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '<div class="spinner"></div>';
+
+  const [faltas, config] = await Promise.all([
+    buscarHistoricoCrismando(id),
+    buscarConfiguracaoTurma(usuario.turma_id)
+  ]);
+
+  // Gera todas as datas de Crisma já ocorridas
+  let datasOcorridas = [];
+  if (config) {
+    const dataInicio = crismando.created_at?.split('T')[0] || '2026-01-01';
+    datasOcorridas = gerarDatasCrismaAteHoje(config.dia_semana_crisma, dataInicio);
+  }
+
+  // Mapa: data -> registro de falta
+  const faltasMap = {};
+  faltas.forEach(f => { faltasMap[f.data_falta] = f; });
+
+  // Constrói timeline
+  const itens = datasOcorridas.map(data => {
+    const falta = faltasMap[data];
+    if (!falta) return { data, tipo: 'presente' };
+    return { data, tipo: falta.status_justificativa, falta };
+  }).reverse(); // mais recente primeiro
+
+  if (!itens.length) {
+    tl.innerHTML = `<p style="color:var(--cinza-texto);text-align:center">Sem histórico disponível.</p>`;
+    return;
+  }
+
+  tl.innerHTML = itens.map((item, idx) => {
+    const dt = formatarData(item.data);
+
+    if (item.tipo === 'presente') {
+      return `
+        <div class="timeline-item presente" style="animation-delay:${Math.min(idx * 0.05, 0.5)}s">
+          <div class="tl-date">${dt}</div>
+          <div class="tl-status">✓ Presente</div>
+        </div>`;
+    }
+
+    const f = item.falta;
+    const labels = {
+      sem_justificativa: { icon: '✗', texto: 'Falta não justificada', classe: 'falta-nao-justificada' },
+      pendente:          { icon: '⏳', texto: 'Justificativa pendente', classe: 'pendente' },
+      aprovada:          { icon: '✓', texto: 'Falta justificada — aprovada', classe: 'falta-aprovada' },
+      recusada:          { icon: '✗', texto: 'Justificativa recusada', classe: 'recusada' }
+    };
+    const info = labels[f.status_justificativa] || labels.sem_justificativa;
+
+    return `
+      <div class="timeline-item ${info.classe}" style="animation-delay:${Math.min(idx * 0.05, 0.5)}s" id="tl-${f.id}">
+        <div class="tl-date">${dt}</div>
+        <div class="tl-status">${info.icon} ${info.texto}</div>
+        ${f.justificativa ? `<div class="tl-justificativa">"${f.justificativa}"</div>` : ''}
+        ${ehCoordenador ? `
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn-danger" style="font-size:12px;padding:6px 12px" onclick="remover('${f.id}')">🗑 Remover</button>
+            ${f.status_justificativa === 'pendente' ? `
+              <button class="btn-success" style="font-size:12px;padding:6px 12px" onclick="decidir('${f.id}','aprovada')">✓ Aprovar</button>
+              <button class="btn-danger"  style="font-size:12px;padding:6px 12px" onclick="decidir('${f.id}','recusada')">✗ Recusar</button>
+            ` : ''}
+          </div>
+        ` : ''}
+      </div>`;
+  }).join('');
+}
+
+window.remover = async (faltaId) => {
+  if (!confirm('Remover esta falta do histórico?')) return;
+  try {
+    await removerFalta(faltaId);
+    showToast('Falta removida', 'success');
+    carregar();
+  } catch(e) {
+    showToast('Erro ao remover', 'error');
+  }
+};
+
+window.decidir = async (faltaId, decisao) => {
+  try {
+    await decidirJustificativa(faltaId, decisao);
+    showToast(decisao === 'aprovada' ? 'Aprovada!' : 'Recusada', decisao === 'aprovada' ? 'success' : 'error');
+    carregar();
+  } catch(e) {
+    showToast('Erro', 'error');
+  }
+};
+
+// Modal editar
+document.getElementById('btnEditar')?.addEventListener('click', () => {
+  document.getElementById('editNome').value = crismando.nome_completo || '';
+  document.getElementById('editNasc').value = crismando.data_nascimento || '';
+  document.getElementById('editResp').value = crismando.responsavel_nome || '';
+  document.getElementById('editTel').value  = crismando.responsavel_telefone || '';
+  document.getElementById('modalEditar').classList.add('open');
+});
+
+document.getElementById('btnCancelarEdit')?.addEventListener('click', () => {
+  document.getElementById('modalEditar').classList.remove('open');
+});
+
+document.getElementById('btnSalvarEdit')?.addEventListener('click', async () => {
+  const nome = document.getElementById('editNome').value.trim();
+  if (!nome) { showToast('Informe o nome', 'error'); return; }
+  const btn = document.getElementById('btnSalvarEdit');
+  btn.textContent = 'Salvando...'; btn.disabled = true;
+  try {
+    await editarCrismando(id, {
+      nome_completo: nome,
+      data_nascimento: document.getElementById('editNasc').value || null,
+      responsavel_nome: document.getElementById('editResp').value.trim() || null,
+      responsavel_telefone: document.getElementById('editTel').value.trim() || null
+    });
+    showToast('Dados atualizados', 'success');
+    document.getElementById('modalEditar').classList.remove('open');
+    carregar();
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  } finally {
+    btn.textContent = 'Salvar'; btn.disabled = false;
+  }
+});
+
+carregar();
+</script>
+
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(() => {});</script>
+</body>
+</html>
