@@ -171,7 +171,10 @@ create trigger trg_status_justificativa
   for each row execute function public.set_status_justificativa();
 
 -- ── 9. VIEW de saúde ───────────────────────────────────────
-create or replace view public.vw_saude_frequencia as
+-- security_invoker garante que a view respeita as RLS policies
+-- do usuário que consulta, não do dono da view (postgres)
+create or replace view public.vw_saude_frequencia
+with (security_invoker = on) as
 select
   c.id as crismando_id,
   c.turma_id,
