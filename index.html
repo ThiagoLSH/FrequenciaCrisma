@@ -178,9 +178,37 @@ document.getElementById('formLogin').addEventListener('submit', async (e) => {
   }
 });
 
-// Login Google
-document.getElementById('btnGoogle').addEventListener('click', loginGoogle);
-document.getElementById('btnGoogleCad').addEventListener('click', loginGoogle);
+// Login Google (aba Entrar) — sem role, quem já tem conta continua igual
+document.getElementById('btnGoogle').addEventListener('click', () => {
+  localStorage.removeItem('google_cadastro_intent');
+  loginGoogle();
+});
+
+// Cadastrar com Google (aba Cadastro) — preserva intenção de coordenador
+document.getElementById('btnGoogleCad').addEventListener('click', async () => {
+  const isCoordenador = document.getElementById('chkCoordenador').checked;
+
+  if (isCoordenador) {
+    const nome = document.getElementById('cadNome').value.trim();
+    const senhaCoordenador = document.getElementById('cadSenhaCoordenador').value.trim();
+
+    if (!nome) { showToast('Informe seu nome completo antes de continuar com Google', 'error'); return; }
+    if (!senhaCoordenador) { showToast('Informe a senha de coordenador', 'error'); return; }
+
+    // Valida senha de coordenador no frontend antes do redirect
+    const { validarSenhaCoordenador } = await import('/js/utils.js');
+    const valido = validarSenhaCoordenador(nome, senhaCoordenador);
+    if (!valido) { showToast('Senha de coordenador inválida. Verifique com a coordenação.', 'error'); return; }
+
+    // Salva intenção para o callback recuperar após o redirect OAuth
+    localStorage.setItem('google_cadastro_intent', JSON.stringify({ isCoordenador: true, nomeCompleto: nome }));
+  } else {
+    const nucleo = document.getElementById('cadNucleo').value;
+    localStorage.setItem('google_cadastro_intent', JSON.stringify({ isCoordenador: false, nucleo }));
+  }
+
+  loginGoogle();
+});
 
 // Cadastro
 document.getElementById('formCadastro').addEventListener('submit', async (e) => {
